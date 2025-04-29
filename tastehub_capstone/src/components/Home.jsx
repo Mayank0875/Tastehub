@@ -1,10 +1,10 @@
 import React from 'react';
-import Navbar from './components/Navbar';
-import Button from './components/Button';
-import FeatureCard from './components/FeatureCard';
-import TestimonialCard from './components/TestimonialCard';
-import StepCard from './components/StepCard';
-import Footer from './components/Footer';
+import Navbar from './Navbar';
+import Button from './Button';
+import FeatureCard from './FeatureCard';
+import TestimonialCard from './TestimonialCard';
+import StepCard from './StepCard';
+import Footer from './Footer';
 import { Search } from 'lucide-react';
 
 function Home() {
