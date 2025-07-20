@@ -19,13 +19,66 @@ const suggestionsList = [
 export default function RestaurantFinder() {
   const [search, setSearch] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [restaurants, setRestaurants] = useState([]); // For fetched restaurants
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
   const filteredSuggestions =
     search.length > 0
       ? suggestionsList.filter(s => s.toLowerCase().includes(search.toLowerCase())).slice(0, 7)
       : [];
+
   const handleSuggestionClick = (suggestion) => {
     setSearch(suggestion);
     setShowSuggestions(false);
+    fetchRestaurants(suggestion);
+  };
+
+  // Helper: Get city coordinates from OpenTripMap
+  const getCityCoords = async (city) => {
+    const res = await fetch(`https://api.opentripmap.com/0.1/en/places/geoname?name=${encodeURIComponent(city)}&apikey=5ae2e3f221c38a28845f05b611c3b57b`);
+    const data = await res.json();
+    if (data.lat && data.lon) return { lat: data.lat, lon: data.lon };
+    throw new Error('City not found');
+  };
+
+  // Fetch restaurants from OpenTripMap
+  const fetchRestaurants = async (query) => {
+    if (!query) return;
+    setLoading(true);
+    setError(null);
+    setRestaurants([]);
+    try {
+      // Try to get city coordinates
+      let coords;
+      try {
+        coords = await getCityCoords(query);
+      } catch {
+        // If not a city, fallback to a default (e.g., New York)
+        coords = { lat: 40.7128, lon: -74.006 };
+      }
+      // Fetch restaurants near the coordinates
+      const res = await fetch(`https://api.opentripmap.com/0.1/en/places/radius?radius=5000&lon=${coords.lon}&lat=${coords.lat}&kinds=restaurants&format=json&limit=12&apikey=5ae2e3f221c38a28845f05b611c3b57b`);
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) {
+        setRestaurants(data);
+      } else {
+        setRestaurants([]);
+        setError('No restaurants found.');
+      }
+    } catch (err) {
+      setError('Failed to fetch restaurants.');
+      setRestaurants([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      fetchRestaurants(search);
+      setShowSuggestions(false);
+    }
   };
 
   return (
@@ -47,6 +100,7 @@ export default function RestaurantFinder() {
           }}
           onFocus={() => setShowSuggestions(true)}
           onBlur={() => setTimeout(() => setShowSuggestions(false), 100)}
+          onKeyDown={handleKeyDown}
           placeholder="Type a cuisine, restaurant, or location..."
           className="w-full px-4 py-3 border-2 border-orange-400 rounded-lg text-lg focus:outline-none"
         />
@@ -65,17 +119,28 @@ export default function RestaurantFinder() {
         )}
       </section>
 
-      {/* Featured Restaurants */}
+      {/* API Restaurants or Featured Restaurants */}
       <section className="w-full max-w-3xl mb-12">
-        <h2 className="text-2xl font-bold mb-6 text-orange-700">Featured Restaurants</h2>
+        <h2 className="text-2xl font-bold mb-6 text-orange-700">{restaurants.length > 0 ? 'Search Results' : 'Featured Restaurants'}</h2>
+        {loading && <div className="text-center text-orange-600">Loading restaurants...</div>}
+        {error && <div className="text-center text-red-600">{error}</div>}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {sampleRestaurants.map(r => (
-            <div key={r.name} className="bg-gray-100 border-2 border-orange-200 rounded-xl p-6 flex flex-col items-center">
-              <span className="text-3xl mb-2">{r.emoji}</span>
-              <h3 className="text-lg font-bold mb-1">{r.name}</h3>
-              <p className="text-gray-700 text-center">{r.desc}</p>
-            </div>
-          ))}
+          {restaurants.length > 0
+            ? restaurants.map(r => (
+                <div key={r.xid} className="bg-gray-100 border-2 border-orange-200 rounded-xl p-6 flex flex-col items-center">
+                  <span className="text-3xl mb-2">🍽️</span>
+                  <h3 className="text-lg font-bold mb-1">{r.name || 'Unnamed Restaurant'}</h3>
+                  <p className="text-gray-700 text-center">{r.kinds?.replace(/_/g, ', ')}</p>
+                  <a href={`https://opentripmap.com/en/poi/${r.xid}`} target="_blank" rel="noopener noreferrer" className="mt-2 text-orange-600 underline text-sm">View Details</a>
+                </div>
+              ))
+            : sampleRestaurants.map(r => (
+                <div key={r.name} className="bg-gray-100 border-2 border-orange-200 rounded-xl p-6 flex flex-col items-center">
+                  <span className="text-3xl mb-2">{r.emoji}</span>
+                  <h3 className="text-lg font-bold mb-1">{r.name}</h3>
+                  <p className="text-gray-700 text-center">{r.desc}</p>
+                </div>
+              ))}
         </div>
       </section>
 

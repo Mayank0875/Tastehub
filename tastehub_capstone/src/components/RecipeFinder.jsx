@@ -19,6 +19,9 @@ const suggestionsList = [
 export default function RecipeFinder() {
   const [search, setSearch] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [recipes, setRecipes] = useState([]); // For fetched recipes
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   const filteredSuggestions =
     search.length > 0
@@ -28,6 +31,36 @@ export default function RecipeFinder() {
   const handleSuggestionClick = (suggestion) => {
     setSearch(suggestion);
     setShowSuggestions(false);
+    fetchRecipes(suggestion);
+  };
+
+  const fetchRecipes = async (query) => {
+    if (!query) return;
+    setLoading(true);
+    setError(null);
+    setRecipes([]);
+    try {
+      const res = await fetch(`https://www.themealdb.com/api/json/v1/1/search.php?s=${encodeURIComponent(query)}`);
+      const data = await res.json();
+      if (data.meals) {
+        setRecipes(data.meals);
+      } else {
+        setRecipes([]);
+        setError('No recipes found.');
+      }
+    } catch (err) {
+      setError('Failed to fetch recipes.');
+      setRecipes([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      fetchRecipes(search);
+      setShowSuggestions(false);
+    }
   };
 
   return (
@@ -49,6 +82,7 @@ export default function RecipeFinder() {
           }}
           onFocus={() => setShowSuggestions(true)}
           onBlur={() => setTimeout(() => setShowSuggestions(false), 100)}
+          onKeyDown={handleKeyDown}
           placeholder="Type a recipe, ingredient, or location..."
           className="w-full px-4 py-3 border-2 border-blue-400 rounded-lg text-lg focus:outline-none"
         />
@@ -67,17 +101,28 @@ export default function RecipeFinder() {
         )}
       </section>
 
-      {/* Featured Recipes */}
+      {/* API Recipes or Featured Recipes */}
       <section className="w-full max-w-3xl mb-12">
-        <h2 className="text-2xl font-bold mb-6 text-blue-700">Featured Recipes</h2>
+        <h2 className="text-2xl font-bold mb-6 text-blue-700">{recipes.length > 0 ? 'Search Results' : 'Featured Recipes'}</h2>
+        {loading && <div className="text-center text-blue-600">Loading recipes...</div>}
+        {error && <div className="text-center text-red-600">{error}</div>}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {sampleRecipes.map(r => (
-            <div key={r.name} className="bg-gray-100 border-2 border-blue-200 rounded-xl p-6 flex flex-col items-center">
-              <span className="text-3xl mb-2">{r.emoji}</span>
-              <h3 className="text-lg font-bold mb-1">{r.name}</h3>
-              <p className="text-gray-700 text-center">{r.desc}</p>
-            </div>
-          ))}
+          {recipes.length > 0
+            ? recipes.map(r => (
+                <div key={r.idMeal} className="bg-gray-100 border-2 border-blue-200 rounded-xl p-6 flex flex-col items-center">
+                  <img src={r.strMealThumb} alt={r.strMeal} className="w-24 h-24 object-cover rounded-full mb-2" />
+                  <h3 className="text-lg font-bold mb-1">{r.strMeal}</h3>
+                  <p className="text-gray-700 text-center line-clamp-3">{r.strInstructions?.slice(0, 100)}...</p>
+                  <a href={r.strSource || r.strYoutube} target="_blank" rel="noopener noreferrer" className="mt-2 text-blue-600 underline text-sm">View Recipe</a>
+                </div>
+              ))
+            : sampleRecipes.map(r => (
+                <div key={r.name} className="bg-gray-100 border-2 border-blue-200 rounded-xl p-6 flex flex-col items-center">
+                  <span className="text-3xl mb-2">{r.emoji}</span>
+                  <h3 className="text-lg font-bold mb-1">{r.name}</h3>
+                  <p className="text-gray-700 text-center">{r.desc}</p>
+                </div>
+              ))}
         </div>
       </section>
 
