@@ -1,12 +1,20 @@
-import { Shield, ArrowRight, Brain, TrendingUp, Lock, Target, Activity, Lightbulb, BookOpen } from 'lucide-react';
+import { Shield, ArrowRight, Brain, TrendingUp, Lock, Target, Activity, Lightbulb, BookOpen, Sparkles, Zap, Eye } from 'lucide-react';
 import Navbar from '../layout/Navbar';
 import ArchitectureSection from '../features/ArchitectureSection';
 
-const LandingPage = ({ onStartDemo }) => (
+const LandingPage = ({ onStartDemo, onShowGuide, onOpenHowTo, onJudgeMode, judgeMode }) => (
   <div className="min-h-screen bg-[#F5F5F7] font-sans text-slate-900 selection:bg-orange-200 scroll-smooth">
     
     {/* 1. Premium Navbar */}
-    <Navbar onHome={() => window.scrollTo(0,0)} showTryButton={true} onStartDemo={onStartDemo} />
+    <Navbar 
+      onHome={() => window.scrollTo(0,0)} 
+      showTryButton={true} 
+      onStartDemo={onStartDemo} 
+      onOpenHowTo={onOpenHowTo}
+      onToggleJudgeMode={onJudgeMode}
+      judgeMode={judgeMode}
+      onShowGuide={onShowGuide}
+    />
 
     {/* 2. Hero Section (Apple Style) */}
     <section className="pt-32 pb-20 px-6 text-center max-w-5xl mx-auto">
@@ -29,24 +37,54 @@ const LandingPage = ({ onStartDemo }) => (
         We use fear appeals to ensure you never miss rent.
       </p>
 
-      <div className="flex flex-col sm:flex-row items-center justify-center gap-4 relative mt-12 mb-20">
-        
+      <div className="flex flex-col sm:flex-row items-center justify-center gap-4 relative mt-12 mb-12">
         <button 
           onClick={onStartDemo}
           className="relative px-12 py-6 bg-slate-900 text-white rounded-2xl font-bold text-xl shadow-2xl shadow-slate-900/40 hover:scale-105 transition-transform flex items-center gap-3 border-4 border-white/10 z-10"
         >
           Launch Prototype <ArrowRight size={24} />
         </button>
+        <button
+          onClick={onJudgeMode}
+          className={`px-10 py-5 rounded-2xl font-bold text-sm border ${
+            judgeMode ? 'bg-red-50 text-red-600 border-red-200' : 'bg-white text-slate-700 border-slate-200'
+          }`}
+        >
+          {judgeMode ? 'Judge Mode Active' : 'Skip to Judge Mode'}
+        </button>
+        <button
+          onClick={onShowGuide}
+          className="px-10 py-5 rounded-2xl font-bold text-sm border border-slate-200 bg-white text-slate-700 hover:bg-slate-100"
+        >
+          Take Guided Tour
+        </button>
+      </div>
 
-        {/* --- JUDGE POINTER --- */}
-        <div className="absolute top-full mt-6 animate-bounce z-20 pointer-events-none">
-           <div className="bg-yellow-400 text-black text-xs font-black px-4 py-2 rounded-lg shadow-xl border-2 border-black -rotate-3 flex flex-col items-center relative">
-             <div className="w-0 h-0 border-l-[8px] border-l-transparent border-b-[10px] border-b-black border-r-[8px] border-r-transparent absolute -top-[12px] left-1/2 -translate-x-1/2"></div>
-             <span>👨‍⚖️ JUDGES</span>
-             <span className="text-[10px] font-bold uppercase tracking-wider">Click Above to Start</span>
-           </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-12">
+        {[
+          { icon: <Sparkles size={18} />, title: 'Agent Modes', desc: 'Advisor → Vasooli, switches automatically based on risk.' },
+          { icon: <Zap size={18} />, title: 'Neuro-Symbolic Logic', desc: 'FRS decomposition + causal map show reasoning.' },
+          { icon: <Eye size={18} />, title: 'Judge Tasks Built-in', desc: 'App guides judges to trigger the “fear block”.' },
+        ].map((item, idx) => (
+          <div key={idx} className="bg-white border border-slate-200 rounded-2xl px-5 py-4 flex gap-3 items-start text-left shadow-sm">
+            <div className="w-10 h-10 rounded-xl bg-slate-900 text-white flex items-center justify-center">
+              {item.icon}
+            </div>
+            <div>
+              <p className="text-sm font-bold text-slate-900">{item.title}</p>
+              <p className="text-xs text-slate-500 leading-relaxed">{item.desc}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="bg-white/60 border border-slate-200 rounded-[2rem] p-6 mb-16 shadow-inner">
+        <div className="aspect-video rounded-[1.5rem] bg-gradient-to-br from-slate-900 to-slate-800 text-white flex flex-col items-center justify-center relative overflow-hidden">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,#f97316,transparent)] opacity-40"></div>
+          <p className="text-[11px] uppercase tracking-[0.5em] text-white/60 mb-4">Auto Pitch</p>
+          <h4 className="text-3xl font-bold text-center max-w-xl leading-tight">Watch Vasooli Bhai bully someone into saving rent in 30 seconds.</h4>
+          <p className="text-sm text-white/70 mt-4">Video placeholder – replace with Loom walkthrough if possible.</p>
         </div>
-
       </div>
     </section>
 

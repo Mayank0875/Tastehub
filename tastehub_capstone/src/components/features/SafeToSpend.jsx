@@ -1,6 +1,6 @@
 import { Plus, Minus } from 'lucide-react';
 
-const SafeToSpend = ({ safeBalance, realBalance, onAddIncome, onSpend }) => {
+const SafeToSpend = ({ safeBalance, realBalance, lockRate, irregularityLabel, onAddIncome, onSpend }) => {
   return (
     <div className="bg-white rounded-[2.5rem] p-1 shadow-sm border border-slate-200">
       <div className="bg-slate-900 rounded-[2.3rem] p-10 text-white relative overflow-hidden group">
@@ -11,9 +11,17 @@ const SafeToSpend = ({ safeBalance, realBalance, onAddIncome, onSpend }) => {
             <div className="flex items-baseline gap-2">
               <span className="text-7xl font-bold tracking-tighter">₹{safeBalance.toLocaleString()}</span>
             </div>
-            <p className="text-slate-400 text-sm mt-4 font-medium">
-              *₹{(realBalance - safeBalance).toLocaleString()} is locked in the vault for rent.
-            </p>
+            <div className="mt-4 space-y-1">
+              <p className="text-slate-400 text-sm font-medium">
+                *₹{(realBalance - safeBalance).toLocaleString()} is locked in the vault for rent.
+              </p>
+              {lockRate != null && (
+                <p className="text-xs text-orange-200 font-semibold">
+                  Current rule: <span className="text-white">{Math.round(lockRate * 100)}%</span> of every income is auto-locked
+                  {irregularityLabel ? ` (Income rhythm: ${irregularityLabel})` : ''}.
+                </p>
+              )}
+            </div>
           </div>
           <div className="flex gap-4 w-full md:w-auto">
             <button 
