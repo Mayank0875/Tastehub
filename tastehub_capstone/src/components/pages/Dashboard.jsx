@@ -12,6 +12,7 @@ import AgentCore from '../features/AgentCore';
 import TransactionModal from '../features/TransactionModal';
 import JudgeTasks from '../features/JudgeTasks';
 import { generateFinancialData } from '../../services/financialDataService';
+import { transactionsAPI, userAPI, financialAPI } from '../../services/api';
 
 const Dashboard = ({ user, onLogout, onHome, onSwitchProfile, judgeMode = false, onShowGuide }) => {
   if (!user) {
@@ -98,87 +99,184 @@ const Dashboard = ({ user, onLogout, onHome, onSwitchProfile, judgeMode = false,
     }
   }, [activeTab]);
 
+  // Get userId from user profile
+  const userId = user?.id || 'default';
+
   useEffect(() => {
     const fetchHistory = async () => {
       setLoadingAI(true);
       setAiStatus("Connecting to Bank API...");
-      await new Promise(r => setTimeout(r, 1000));
+      await new Promise(r => setTimeout(r, 800));
       
-      setAiStatus("Reading Transaction History...");
-      await new Promise(r => setTimeout(r, 1000));
+      try {
+        // Try to load existing state from backend
+        setAiStatus("Loading user state...");
+        const [savedState, savedTransactions] = await Promise.all([
+          userAPI.getState(userId).catch(() => null),
+          transactionsAPI.getAll(userId).catch(() => ({ transactions: [] }))
+        ]);
 
-      setAiStatus("AI Profiling & Fine-Tuning...");
-      const data = await generateFinancialData(user);
-      
-      setTransactions(data.transactions);
-      setSafeBalance(data.safeBalance);
-      setRealBalance(data.realBalance);
-      setVasooliScore(data.vasooliScore);
-      setRentSecured(data.rentSecured);
-      recomputeDerivedState(data.transactions, data.vasooliScore, data.rentSecured);
-      
-      setLoadingAI(false);
-      addLog("History generated via LLM. Risk Profile active.", "success");
+        if (savedState && savedTransactions?.transactions?.length > 0) {
+          // Restore from saved state
+          setRealBalance(savedState.realBalance || 0);
+          setSafeBalance(savedState.safeBalance || 0);
+          setVasooliScore(savedState.vasooliScore || 0);
+          setRentSecured(savedState.rentSecured || 0);
+          setAgentMode(savedState.agentMode || 'Advisor');
+          setLockRate(savedState.lockRate || 0.2);
+          setTransactions(savedTransactions.transactions);
+          recomputeDerivedState(savedTransactions.transactions, savedState.vasooliScore || 0, savedState.rentSecured || 0);
+          setLoadingAI(false);
+          addLog("User state restored from backend.", "success");
+          return;
+        }
+
+        // Generate new data if no saved state
+        setAiStatus("AI Profiling & Fine-Tuning...");
+        const data = await generateFinancialData(user);
+        
+        setTransactions(data.transactions);
+        setSafeBalance(data.safeBalance);
+        setRealBalance(data.realBalance);
+        setVasooliScore(data.vasooliScore);
+        setRentSecured(data.rentSecured);
+        recomputeDerivedState(data.transactions, data.vasooliScore, data.rentSecured);
+        
+        // Save initial state to backend
+        await Promise.all([
+          userAPI.updateState(userId, {
+            realBalance: data.realBalance,
+            safeBalance: data.safeBalance,
+            vasooliScore: data.vasooliScore,
+            rentSecured: data.rentSecured,
+            agentMode: computeAgentMode(data.vasooliScore, data.rentSecured),
+            lockRate: getLockRate(user.risk, computeIrregularity(data.transactions))
+          }).catch(console.error),
+          ...data.transactions.map(tx => 
+            transactionsAPI.add(userId, tx).catch(console.error)
+          )
+        ]);
+        
+        setLoadingAI(false);
+        addLog("History generated via LLM. Risk Profile active.", "success");
+      } catch (error) {
+        console.error('Error loading data:', error);
+        setLoadingAI(false);
+        addLog("Backend unavailable, using local data.", "warning");
+      }
     };
     fetchHistory();
-  }, [user]);
+  }, [user, userId]);
 
   const addLog = (text, type = 'info') => {
     const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     setAgentLogs(prev => [...prev, { id: Date.now(), time, text, type }]);
   };
 
-  const handleTransaction = () => {
+  const handleTransaction = async () => {
     const val = parseFloat(amount);
     if (!val) return;
     setLoadingAction(true);
-    setTimeout(() => {
+    
+    try {
       const newTxId = Date.now();
       const timeString = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      
       if (actionType === 'EARN') {
         const taxRate = lockRate; 
         const tax = Math.floor(val * taxRate);
         const safe = val - tax;
-        setRealBalance(prev => prev + val);
-        setSafeBalance(prev => prev + safe);
-        const newTx = { id: newTxId, desc: desc || user.incomeSource, amount: val, status: `Locked (${Math.round(taxRate*100)}%)`, type: 'income', date: `Today, ${timeString}` };
-        setTransactions(prev => {
-          const updated = [newTx, ...prev];
-          recomputeDerivedState(updated, vasooliScore, rentSecured);
-          return updated;
-        });
+        const newRealBalance = realBalance + val;
+        const newSafeBalance = safeBalance + safe;
+        
+        setRealBalance(newRealBalance);
+        setSafeBalance(newSafeBalance);
+        
+        const newTx = { 
+          id: newTxId, 
+          desc: desc || user.incomeSource, 
+          amount: val, 
+          status: `Locked (${Math.round(taxRate*100)}%)`, 
+          type: 'income', 
+          date: `Today, ${timeString}` 
+        };
+        
+        const updated = [newTx, ...transactions];
+        setTransactions(updated);
+        recomputeDerivedState(updated, vasooliScore, rentSecured);
+        
+        // Save to backend
+        await transactionsAPI.add(userId, newTx).catch(console.error);
+        await userAPI.updateState(userId, {
+          realBalance: newRealBalance,
+          safeBalance: newSafeBalance
+        }).catch(console.error);
+        
         addLog(`Income detected: ₹${val}. Applying Partitioning.`, 'info');
         setTimeout(() => addLog(`Vasooli Successful. Locked ₹${tax}.`, 'success'), 600);
       } else {
         addLog(`Spending request: ₹${val}...`, 'info');
+        
         if (val > safeBalance) {
-          const newTx = { id: newTxId, desc: desc || "Attempted Spend", amount: val, status: 'BLOCKED BY AGENT', type: 'blocked', date: `Today, ${timeString}` };
-          setTransactions(prev => {
-            const updated = [newTx, ...prev];
-            // blocked spend => likely switch to harsher mode
-            setAgentMode('Vasooli');
-            return updated;
-          });
+          const newTx = { 
+            id: newTxId, 
+            desc: desc || "Attempted Spend", 
+            amount: val, 
+            status: 'BLOCKED BY AGENT', 
+            type: 'blocked', 
+            date: `Today, ${timeString}` 
+          };
+          
+          const updated = [newTx, ...transactions];
+          setTransactions(updated);
+          setAgentMode('Vasooli');
+          
+          // Save blocked transaction
+          await transactionsAPI.add(userId, newTx).catch(console.error);
+          await userAPI.updateState(userId, { agentMode: 'Vasooli' }).catch(console.error);
+          
           markTask('spendBlocked');
           setTimeout(() => addLog(`CRITICAL: User ignoring future rent. REJECTED.`, 'error'), 600);
           alert("🛑 VASOOLI BHAI SAYS: \n\n'Pagal hai kya? Rent tera baap bharega?' \n\nTransaction Rejected.");
         } else {
-          setRealBalance(prev => prev - val);
-          setSafeBalance(prev => prev - val);
-          const newTx = { id: newTxId, desc: desc || "Expense", amount: val, status: 'Approved', type: 'expense', date: `Today, ${timeString}` };
-          setTransactions(prev => {
-            const updated = [newTx, ...prev];
-            recomputeDerivedState(updated, vasooliScore, rentSecured);
-            return updated;
-          });
+          const newRealBalance = realBalance - val;
+          const newSafeBalance = safeBalance - val;
+          
+          setRealBalance(newRealBalance);
+          setSafeBalance(newSafeBalance);
+          
+          const newTx = { 
+            id: newTxId, 
+            desc: desc || "Expense", 
+            amount: val, 
+            status: 'Approved', 
+            type: 'expense', 
+            date: `Today, ${timeString}` 
+          };
+          
+          const updated = [newTx, ...transactions];
+          setTransactions(updated);
+          recomputeDerivedState(updated, vasooliScore, rentSecured);
+          
+          // Save to backend
+          await transactionsAPI.add(userId, newTx).catch(console.error);
+          await userAPI.updateState(userId, {
+            realBalance: newRealBalance,
+            safeBalance: newSafeBalance
+          }).catch(console.error);
+          
           setTimeout(() => addLog(`Analysis: Expense allowed.`, 'success'), 600);
         }
       }
+    } catch (error) {
+      console.error('Transaction error:', error);
+      addLog('Transaction saved locally (backend sync failed).', 'warning');
+    } finally {
       setLoadingAction(false);
       setIsModalOpen(false);
       setAmount('');
       setDesc('');
-    }, 800);
+    }
   };
 
   if (loadingAI) {
