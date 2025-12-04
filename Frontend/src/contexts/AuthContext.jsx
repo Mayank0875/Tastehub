@@ -35,7 +35,7 @@ export const AuthProvider = ({ children }) => {
         const checkAuth = async () => {
             if (token) {
                 try {
-                    const response = await axios.get('http://localhost:3030/auth/profile');
+                    const response = await axios.get('https://tastehub-smhl.onrender.com/auth/profile');
                     if (response.data.success) {
                         setUser(response.data.data);
                     } else {
@@ -62,7 +62,7 @@ export const AuthProvider = ({ children }) => {
      */
     const register = async (userData) => {
         try {
-            const response = await axios.post('http://localhost:3030/auth/register', userData);
+            const response = await axios.post('https://tastehub-smhl.onrender.com/auth/register', userData);
             if (response.data.success) {
                 const { user: userInfo, token: authToken } = response.data.data;
                 setUser(userInfo);
@@ -88,7 +88,7 @@ export const AuthProvider = ({ children }) => {
      */
     const login = async (credentials) => {
         try {
-            const response = await axios.post('http://localhost:3030/auth/login', credentials);
+            const response = await axios.post('https://tastehub-smhl.onrender.com/auth/login', credentials);
             if (response.data.success) {
                 const { user: userInfo, token: authToken } = response.data.data;
                 setUser(userInfo);
@@ -122,7 +122,7 @@ export const AuthProvider = ({ children }) => {
      */
     const updateProfile = async (updates) => {
         try {
-            const response = await axios.put('http://localhost:3030/auth/profile', updates);
+            const response = await axios.put('https://tastehub-smhl.onrender.com/auth/profile', updates);
             if (response.data.success) {
                 setUser(response.data.data);
                 return { success: true, data: response.data.data };

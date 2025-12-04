@@ -21,7 +21,7 @@ export const SocketProvider = ({ children }) => {
 
     useEffect(() => {
         // Initialize socket connection
-        const newSocket = io('http://localhost:3030', {
+        const newSocket = io('https://tastehub-smhl.onrender.com', {
             transports: ['websocket']
         });
 

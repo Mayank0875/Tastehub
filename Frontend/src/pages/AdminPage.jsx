@@ -48,7 +48,7 @@ const AdminPage = () => {
      */
     const fetchStats = async () => {
         try {
-            const response = await axios.get('http://localhost:3030/admin/stats');
+            const response = await axios.get('https://tastehub-smhl.onrender.com/admin/stats');
             if (response.data.success) {
                 setStats(response.data.data);
             }
@@ -62,7 +62,7 @@ const AdminPage = () => {
      */
     const fetchProblems = async () => {
         try {
-            const response = await axios.get('http://localhost:3030/problem');
+            const response = await axios.get('https://tastehub-smhl.onrender.com/problem');
             if (response.data.success) {
                 setProblems(response.data.data);
             }
@@ -76,7 +76,7 @@ const AdminPage = () => {
      */
     const fetchUsers = async () => {
         try {
-            const response = await axios.get('http://localhost:3030/admin/users');
+            const response = await axios.get('https://tastehub-smhl.onrender.com/admin/users');
             if (response.data.success) {
                 setUsers(response.data.data.users);
             }
@@ -94,7 +94,7 @@ const AdminPage = () => {
     const deleteProblem = async (problemId) => {
         if (window.confirm('Are you sure you want to delete this problem?')) {
             try {
-                const response = await axios.delete(`http://localhost:3030/admin/problems/${problemId}`);
+                const response = await axios.delete(`https://tastehub-smhl.onrender.com/admin/problems/${problemId}`);
                 if (response.data.success) {
                     fetchProblems();
                 }
@@ -112,7 +112,7 @@ const AdminPage = () => {
      */
     const toggleUserStatus = async (userId, currentStatus) => {
         try {
-            const response = await axios.put(`http://localhost:3030/admin/users/${userId}`, {
+            const response = await axios.put(`https://tastehub-smhl.onrender.com/admin/users/${userId}`, {
                 isActive: !currentStatus
             });
             if (response.data.success) {

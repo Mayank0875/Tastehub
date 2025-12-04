@@ -96,7 +96,7 @@ const CreateProblemForm = ({ onClose, onSuccess }) => {
                 testCases: validTestCases
             };
 
-            const response = await axios.post('http://localhost:3030/admin/problems', payload);
+            const response = await axios.post('https://tastehub-smhl.onrender.com/admin/problems', payload);
 
             if (response.data.success) {
                 alert('Problem created successfully!');
