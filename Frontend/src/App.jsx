@@ -1,82 +1,80 @@
-import React, { useEffect } from "react";
-import { Routes, Route, Navigate } from "react-router-dom";
-import { Toaster } from "react-hot-toast";
-import { useAuthStore } from "./store/useAuthStore";
-import Loader from "./components/Loader";
-
-import Layout from "./layout/Layout";
-import LandingPage from "./page/Landing";
-import Auth from "./page/Auth";
-import Register from "./page/Register";
-import AdminRoute from "./components/AdminRoute";
-import AddProblem from "./page/AddProblem";
-
-import NewProblemSolver from "./page/ProblemSolver";
-import AllProblems from "./page/AllProblems";
-import LearnPage from "./page/LearnPage";
-import ContestPage from "./page/ContestPage";
-import ContactUs from "./page/ContactUs";
-import Dashboard from "./page/Dashboard";
+// App.jsx
+import React, { useState } from 'react';
+import { AppProvider } from './contexts/AppContext';
+import { AuthProvider } from './contexts/AuthContext';
+import { SocketProvider } from './contexts/SocketContext';
+import { Router, Route } from './components/Router';
+import Navbar from './components/Navbar';
+import AuthModal from './components/AuthModal';
+import RealtimeSubmissions from './components/RealtimeSubmissions';
+import HomePage from './pages/HomePage';
+import ProblemsetPage from './pages/ProblemsetPage';
+import ProblemPage from './pages/ProblemPage';
+import SubmissionsPage from './pages/SubmissionsPage';
+import AdminPage from './pages/AdminPage';
+import NotFoundPage from './pages/NotFoundPage';
+import SettingsPage from './pages/SettingsPage';
+import BlogPage from './pages/BlogPage';
+import TeamsPage from './pages/TeamsPage';
+import FavouritesPage from './pages/FavouritesPage';
+import GroupsPage from './pages/GroupsPage';
+import TalksPage from './pages/TalksPage';
+import ContestsPage from './pages/ContestsPage';
 
 const App = () => {
-  const { authUser, checkAuth, isCheckingAuth } = useAuthStore();
-
-  useEffect(() => {
-    checkAuth();
-  }, [checkAuth]);
-
-  if (isCheckingAuth && !authUser) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <Loader className="" />
-      </div>
-    );
-  }
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authMode, setAuthMode] = useState('login');
+  const [showRealtimeSubmissions, setShowRealtimeSubmissions] = useState(false);
 
   return (
-    <>
-      <Toaster />
-      <Routes>
-        <Route path="/test" element={<LandingPage />} />
-        <Route path="/" element={<Layout />}>
-          <Route
-            index
-            element={authUser ? <LandingPage /> : <Navigate to={"/login"} />}
-          />
-          <Route
-            path="/problems"
-            element={authUser ? <AllProblems /> : <Navigate to={"/login"} />}
-          />
-          <Route path="/learn" element={<LearnPage />} />
-          <Route path="/contact" element={<ContactUs />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-        </Route>
+    <AuthProvider>
+      <SocketProvider>
+        <AppProvider>
+          <Router>
+            <div className="min-h-screen bg-gray-100 text-gray-900 p-4 font-sans">
+              <div className="container mx-auto max-w-7xl">
+                <Navbar 
+                  onShowAuth={(mode) => {
+                    setAuthMode(mode);
+                    setShowAuthModal(true);
+                  }}
+                  onShowRealtimeSubmissions={() => setShowRealtimeSubmissions(true)}
+                />
+                
+                <Route path="/home" component={HomePage} exact />
+                <Route path="/" component={HomePage} exact />
+                <Route path="/problemset" component={ProblemsetPage} exact />
+                <Route path="/problem" component={ProblemPage} />
+                <Route path="/submissions" component={SubmissionsPage} exact />
+                <Route path="/admin" component={AdminPage} exact />
+                <Route path="/settings" component={SettingsPage} exact />
+                <Route path="/blog" component={BlogPage} exact />
+                <Route path="/teams" component={TeamsPage} exact />
+                <Route path="/favourites" component={FavouritesPage} exact />
+                <Route path="/groups" component={GroupsPage} exact />
+                <Route path="/talks" component={TalksPage} exact />
+                <Route path="/contests" component={ContestsPage} exact />
+                
+                <Route path="*" component={NotFoundPage} />
+              </div>
 
-        <Route path="/contest" element={<ContestPage />} />
+              {/* Auth Modal */}
+              <AuthModal
+                isOpen={showAuthModal}
+                onClose={() => setShowAuthModal(false)}
+                mode={authMode}
+              />
 
-        <Route
-          path="/login"
-          element={!authUser ? <Auth /> : <Navigate to={"/"} />}
-        />
-
-        <Route
-          path="/register"
-          element={!authUser ? <Register /> : <Navigate to={"/"} />}
-        />
-
-        <Route
-          path="/problem/:id"
-          element={authUser ? <NewProblemSolver /> : <Navigate to={"/login"} />}
-        />
-
-        <Route element={<AdminRoute />}>
-          <Route
-            path="/add-problem"
-            element={authUser ? <AddProblem /> : <Navigate to="/" />}
-          />
-        </Route>
-      </Routes>
-    </>
+              {/* Real-time Submissions */}
+              <RealtimeSubmissions
+                show={showRealtimeSubmissions}
+                onClose={() => setShowRealtimeSubmissions(false)}
+              />
+            </div>
+          </Router>
+        </AppProvider>
+      </SocketProvider>
+    </AuthProvider>
   );
 };
 

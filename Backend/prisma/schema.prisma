@@ -1,155 +1,79 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
-  output   = "../src/generated/prisma"
-  binaryTargets = ["native", "debian-openssl-3.0.x"]
 }
 
+
 datasource db {
-  provider = "postgresql"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
-enum UserRole {
-  ADMIN
-  USER
+
+model Problem {
+  id           Int          @id @default(autoincrement())
+  title        String       @unique
+  rating       Int
+  tags         Json
+  description  String       @db.LongText
+  constraints  String       @db.LongText
+  sampleInput  String       @db.LongText
+  sampleOutput String       @db.LongText
+  notes        String       @db.LongText
+  createdBy    Int?         // User ID who created the problem
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  submission   Submission[]
+  testCases    TestCase[]
+  creator      User?        @relation("ProblemCreator", fields: [createdBy], references: [id], onDelete: SetNull)
+
+  @@index([createdBy])
 }
 
-enum Difficulty {
-  EASY
-  MEDIUM
-  HARD
+model TestCase {
+  id        Int     @id @default(autoincrement())
+  problemId Int
+  input     String  @db.LongText
+  output    String  @db.LongText
+  problem   Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+
+  @@index([problemId], map: "TestCase_problemId_fkey")
 }
 
 model User {
-  id        String   @id @default(uuid())
-  name      String
-  email     String   @unique
-  password  String
-  image     String?
-  role      UserRole @default(USER)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  problems   Problem[]
-  submission Submission[]
-  solvedBy   ProblemSolved[]
-  playlist   Playlist[]
-}
-
-model Problem {
-  id          String     @id @default(uuid())
-  title       String
-  description String
-  difficulty  Difficulty @default(EASY)
-  tags        String[]
-  userId      String
-  examples    Json
-  constraints String
-  hints       String?
-  editorial   String?
-
-  testCases         Json
-  codeSnippets      Json
-  referenceSolution Json?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  user              User                @relation(fields: [userId], references: [id], onDelete: Cascade)
-  submission        Submission[]
-  solvedBy          ProblemSolved[]
-  problemInPlaylist ProblemInPlaylist[]
+  id              Int          @id @default(autoincrement())
+  username        String       @unique
+  email           String       @unique
+  password        String
+  role            String       @default("USER") // USER, ADMIN
+  isActive        Boolean      @default(true)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  submission      Submission[]
+  createdProblems Problem[]    @relation("ProblemCreator")
 }
 
 model Submission {
-  id            String  @id @default(uuid())
-  userId        String
-  problemId     String
-  problemTitle  String?
-  language      String
-  sourceCode    Json
-  stdin         String?
-  stdout        String?
-  stderr        String?
-  compileOutput String?
-  status        String?
-  memory        String?
-  time          String?
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  problemId   Int
+  code        String   @db.LongText
+  language    String
+  verdict     String
+  submittedAt DateTime @default(now())
+  problem     Problem  @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  createdAt DateTime          @default(now())
-  updatedAt DateTime          @updatedAt
-  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  problem   Problem           @relation(fields: [problemId], references: [id], onDelete: Cascade)
-  testCases TestCasesResult[]
+  @@index([problemId], map: "Submission_problemId_fkey")
+  @@index([userId], map: "Submission_userId_fkey")
 }
 
-model TestCasesResult {
-  id            String  @id @default(uuid())
-  submissionId  String
-  testCase      Int
-  passed        Boolean
-  stdout        String?
-  expected      String
-  stderr        String?
-  compileOutput String?
-  status        String
-  memory        String?
-  time          String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  submission Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
-
-  @@index([submissionId])
-}
-
-model ProblemSolved {
-  id        String   @id @default(uuid())
-  userId    String
-  problemId String
-  language  String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  problem Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, problemId])
-}
-
-model Playlist {
-  id          String   @id @default(uuid())
+model Contest {
+  id          Int      @id @default(autoincrement())
   name        String
-  description String?
-  userId      String
+  description String   @db.LongText
+  problemIds  Json     // Array of problem IDs
+  startsAt    DateTime
+  endsAt      DateTime
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-
-  problems ProblemInPlaylist[]
-  user     User                @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([name, userId])
-}
-
-model ProblemInPlaylist {
-  id         String   @id @default(uuid())
-  playlistId String
-  problemId  String
-  title      String
-  difficulty Difficulty @default(EASY)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  playlist Playlist @relation(fields: [playlistId], references: [id], onDelete: Cascade)
-  problem  Problem  @relation(fields: [problemId], references: [id], onDelete: Cascade)
-
-  @@unique([playlistId, problemId])
 }

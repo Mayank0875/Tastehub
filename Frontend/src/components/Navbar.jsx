@@ -1,194 +1,146 @@
-import { useState, useEffect } from "react";
-import { Link, useLocation } from "react-router-dom";
-import { Menu, X, Code, User, LogOut } from "lucide-react";
+// components/Navbar.jsx
+import React, { useState } from 'react';
+import { Link } from './Router';
+import { useAuth } from '../contexts/AuthContext';
+import { Zap, User, Settings, LogOut, Shield } from 'lucide-react';
 
-import { useAuthStore } from "../store/useAuthStore";
-import LogoutButton from "./LogoutButton";
+const Navbar = ({ onShowAuth, onShowRealtimeSubmissions }) => {
+  const { user, isAuthenticated, isAdmin, logout } = useAuth();
+  const [showUserMenu, setShowUserMenu] = useState(false);
 
-const Navbar = () => {
-  const { authUser } = useAuthStore();
-
-  const [isOpen, setIsOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
-  const location = useLocation();
-
-  useEffect(() => {
-    const handleScroll = () => {
-      if (window.scrollY > 50) {
-        setScrolled(true);
-      } else {
-        setScrolled(false);
-      }
-    };
-
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
-  const toggleMenu = () => {
-    setIsOpen(!isOpen);
+  const handleLoginClick = () => {
+    onShowAuth('login');
   };
 
-  const navLinks = [
-    { name: "Problems", path: "/problems" },
-    { name: "Learn", path: "/learn" },
-    { name: "Contest", path: "/contest" },
-    { name: "Contact Us", path: "/contact" },
-    { name: "Dashboard", path: "/dashboard" },
-  ];
+  const handleSignupClick = () => {
+    onShowAuth('register');
+  };
 
-  const adminNavLinks = [
-    { name: "Problems", path: "/problems" },
-    { name: "Learn", path: "/learn" },
-    { name: "Contest", path: "/contest" },
-    { name: "Contact Us", path: "/contact" },
-    { name: "Add problem", path: "/add-problem" },
-    { name: "Dashboard", path: "/dashboard" },
-  ];
+  const handleLogout = () => {
+    logout();
+    setShowUserMenu(false);
+  };
 
   return (
-    <nav
-      className={`fixed w-full z-50 transition-all duration-300 backdrop-blur-sm`}
-    >
-      <div className="relative w-full flex justify-center">
-        <div
-          className={`transition-all duration-700 ease-in-out transform-gpu ${
-            scrolled
-              ? "w-full scale-x-100 rounded-none  backdrop-blur-sm shadow-lg"
-              : "w-full max-w-5xl scale-x-100 rounded-2xl  backdrop-blur-md shadow-xl mt-3"
-          }`}
-          style={{
-            transformOrigin: "center",
-            ...(scrolled
-              ? {
-                  borderRadius: "0px",
-                  maxWidth: "100%",
-                  marginLeft: "-1rem",
-                  marginRight: "-1rem",
-                  paddingLeft: "1rem",
-                  paddingRight: "1rem",
-                }
-              : {}),
-          }}
-        >
-          <div className="mx-auto px-6 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between h-16">
-              <div className="flex items-center">
-                <Link
-                  to="/"
-                  className="flex items-center text-indigo-500 hover:text-indigo-400 transition-colors"
-                >
-                  {/* <Code className="h-8 w-8 mr-2" /> */}
-                  <svg
-                    width="50"
-                    height="50"
-                    viewBox="0 0 91 187"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      d="M39.28 63.352H56.56L43.12 138.616H82.032L79.088 155H23.024L39.28 63.352Z"
-                      fill="white"
-                    />
-                    <path
-                      d="M17.28 31.352H34.56L21.12 106.616H60.032L57.088 123H1.024L17.28 31.352Z"
-                      fill="white"
-                    />
-                  </svg>
-                  <span className="font-bold text-xl">Love Leetcode</span>
-                </Link>
-              </div>
+    <nav className="bg-white p-4 rounded-2xl shadow-lg mb-6">
+      <div className="container mx-auto max-w-7xl flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Link to="/problemset" className="text-xl font-bold text-[#1ba3ff] md:text-2xl">
+            Merakicode
+          </Link>
+          <Link
+            to="/problemset"
+            className="text-gray-600 hover:text-gray-900 transition-colors duration-200 hidden sm:block"
+          >
+            Problemset
+          </Link>
+          <Link
+            to="/home"
+            className="text-gray-600 hover:text-gray-900 transition-colors duration-200 hidden sm:block"
+          >
+            Home
+          </Link>
+        </div>
+        <div className="flex items-center gap-4">
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Search user..."
+              className="bg-gray-200 text-gray-900 placeholder-gray-500 rounded-full px-4 py-2 pl-10 focus:outline-none focus:ring-2 focus:ring-[#1ba3ff] transition-all duration-200 w-32 sm:w-48"
+            />
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              className="w-4 h-4 text-gray-500 absolute left-3 top-1/2 transform -translate-y-1/2"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              />
+            </svg>
+          </div>
 
-              <div className="hidden md:block">
-                <div className="ml-10 flex items-center space-x-4">
-                  {navLinks.map((link) => (
-                    <Link
-                      key={link.name}
-                      to={link.path}
-                      className={`px-3 py-2 text-sm font-medium transition-colors ${
-                        location.pathname === link.path
-                          ? "text-indigo-400 bg-gray-800"
-                          : "text-gray-300 hover:bg-gray-800 hover:text-white"
-                      }`}
-                    >
-                      {link.name}
-                    </Link>
-                  ))}
-                  {authUser?.data?.role === "ADMIN" && (
-                    <Link
-                      key={"Add problem"}
-                      to="/add-problem"
-                      className={`px-3 py-2 text-sm font-medium transition-colors ${
-                        location.pathname === "/add-problem"
-                          ? "text-indigo-400 bg-gray-800"
-                          : "text-gray-300 hover:bg-gray-800 hover:text-white"
-                      }`}
-                    >
-                      Add Problem
-                    </Link>
-                  )}
+          {/* Real-time submissions button */}
+          {isAuthenticated && (
+            <button
+              onClick={onShowRealtimeSubmissions}
+              className="p-2 text-gray-600 hover:text-blue-600 transition-colors duration-200"
+              title="Live Submissions"
+            >
+              <Zap size={20} />
+            </button>
+          )}
 
+          {/* Authentication buttons */}
+          {!isAuthenticated ? (
+            <>
+              <button
+                onClick={handleLoginClick}
+                className="bg-[#ffa116] text-white px-4 py-2 rounded-full font-semibold hover:bg-opacity-90 transition-opacity duration-200 hidden lg:block"
+              >
+                Login
+              </button>
+              <button
+                onClick={handleSignupClick}
+                className="bg-transparent border border-[#1ba3ff] text-[#1ba3ff] px-4 py-2 rounded-full font-semibold hover:bg-[#1ba3ff] hover:text-white transition-colors duration-200 hidden lg:block"
+              >
+                Signup
+              </button>
+            </>
+          ) : (
+            <div className="relative">
+              <button
+                onClick={() => setShowUserMenu(!showUserMenu)}
+                className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 px-3 py-2 rounded-full transition-colors duration-200"
+              >
+                <User size={16} />
+                <span className="hidden sm:block font-medium">{user.username}</span>
+                {isAdmin && <Shield size={14} className="text-purple-600" />}
+              </button>
+
+              {/* User dropdown menu */}
+              {showUserMenu && (
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+                  <div className="px-4 py-2 border-b border-gray-100">
+                    <p className="font-medium text-gray-900">{user.username}</p>
+                    <p className="text-sm text-gray-500">{user.email}</p>
+                  </div>
+                  
                   <Link
-                    to="/dashboard"
-                    className="rounded-full text-gray-300 hover:text-white focus:outline-none"
+                    to="/settings"
+                    className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-100 transition-colors"
+                    onClick={() => setShowUserMenu(false)}
                   >
-                    {authUser?.data?.image ? (
-                      <img
-                        src={authUser?.data?.image}
-                        alt="Profile"
-                        className="w-8 h-8 rounded-full"
-                      />
-                    ) : (
-                      <User size={20} />
-                    )}
+                    <Settings size={16} />
+                    Settings
                   </Link>
-                  {authUser && (
-                    <LogoutButton className="">
-                      <LogOut className="w-4 h-4 text-white" />
-                    </LogoutButton>
+
+                  {isAdmin && (
+                    <Link
+                      to="/admin"
+                      className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-100 transition-colors"
+                      onClick={() => setShowUserMenu(false)}
+                    >
+                      <Shield size={16} />
+                      Admin Panel
+                    </Link>
                   )}
+
+                  <button
+                    onClick={handleLogout}
+                    className="flex items-center gap-2 w-full px-4 py-2 text-red-600 hover:bg-red-50 transition-colors"
+                  >
+                    <LogOut size={16} />
+                    Logout
+                  </button>
                 </div>
-              </div>
-
-              <div className="md:hidden">
-                <button
-                  onClick={toggleMenu}
-                  className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-white hover:bg-gray-800 focus:outline-none"
-                >
-                  {isOpen ? <X size={24} /> : <Menu size={24} />}
-                </button>
-              </div>
+              )}
             </div>
-          </div>
-
-          {/* Mobile menu */}
-          <div className={`md:hidden ${isOpen ? "block" : "hidden"}`}>
-            <div className="px-2 pt-2 pb-3 space-y-1 backdrop-blur-sm sm:px-3 shadow-lg">
-              {navLinks.map((link) => (
-                <Link
-                  key={link.name}
-                  to={link.path}
-                  className={`block px-3 py-2 rounded-md text-base font-medium ${
-                    location.pathname === link.path
-                      ? "text-indigo-400 bg-gray-800"
-                      : "text-gray-300 hover:bg-gray-800 hover:text-white"
-                  }`}
-                  onClick={() => setIsOpen(false)}
-                >
-                  {link.name}
-                </Link>
-              ))}
-              <div className="flex items-center justify-between px-3 py-2">
-                <Link
-                  to="/profile"
-                  className="p-2 rounded-full text-gray-300 hover:text-white focus:outline-none"
-                  onClick={() => setIsOpen(false)}
-                >
-                  <User size={20} />
-                </Link>
-              </div>
-            </div>
-          </div>
+          )}
         </div>
       </div>
     </nav>
