@@ -25,7 +25,7 @@ export const AppProvider = ({ children }) => {
     console.log("Fetching all problems...");
     setLoading(true);
     try {
-      const response = await fetch("https://tastehub-smhl.onrender.com/problem");
+      const response = await fetch("http://localhost:8080/problem");
       const result = await response.json();
       if (result.success && result.data) {
         console.log(`Fetched ${result.data.length} problems`);

@@ -78,7 +78,7 @@ const EditProblemForm = ({ problem, onClose, onSuccess }) => {
             };
 
             const response = await axios.put(
-                `https://tastehub-smhl.onrender.com/admin/problems/${problem.id}`,
+                `http://localhost:8080/admin/problems/${problem.id}`,
                 payload
             );
 

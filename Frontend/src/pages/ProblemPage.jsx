@@ -29,7 +29,7 @@ const ProblemPage = () => {
   const fetchProblem = async () => {
     console.log(`Fetching problem details for ID: ${problemId}`);
     try {
-      const response = await fetch(`https://tastehub-smhl.onrender.com/problem/${problemId}`);
+      const response = await fetch(`http://localhost:8080/problem/${problemId}`);
       const result = await response.json();
       if (result.success && result.data) {
         setProblem(result.data);
@@ -103,7 +103,7 @@ const ProblemPage = () => {
 
       const ext = language === 'cpp' ? 'cpp' : language === 'python' ? 'py' : 'js';
       const response = await axios.post(
-        `https://tastehub-smhl.onrender.com/submit/${problemId}/${ext}`,
+        `http://localhost:8080/submit/${problemId}/${ext}`,
         formData,
         {
           headers: {
@@ -184,7 +184,7 @@ const ProblemPage = () => {
 
       try {
         const response = await axios.post(
-          `https://tastehub-smhl.onrender.com/submit/${problemId}/${ext}`,
+          `http://localhost:8080/submit/${problemId}/${ext}`,
           formData,
           {
             headers: {

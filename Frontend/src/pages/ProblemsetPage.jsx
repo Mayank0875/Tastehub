@@ -56,7 +56,7 @@ const ProblemsetPage = () => {
   const handleDeleteProblem = async (problemId, problemTitle) => {
     if (window.confirm(`Are you sure you want to delete "${problemTitle}"?`)) {
       try {
-        const response = await axios.delete(`https://tastehub-smhl.onrender.com/admin/problems/${problemId}`);
+        const response = await axios.delete(`http://localhost:8080/admin/problems/${problemId}`);
         if (response.data.success) {
           alert('Problem deleted successfully!');
           fetchProblems(); // Refresh the problem list
